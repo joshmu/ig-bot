@@ -3,3 +3,4 @@ accounts/
 .env
 db/
 cookies/
+pup_user_data/

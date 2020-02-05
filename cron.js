@@ -1,4 +1,4 @@
-const igBot = require('./bots/bot.js')
+const igBot = require('./bot.js')
 const isOnline = require('is-online')
 
 const CronJob = require('cron').CronJob

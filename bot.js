@@ -1,85 +1,39 @@
-require('tools-for-instagram')
-const notifier = require('node-notifier')
+const ig = require('./ig.js')
+const { random, sleep } = require('./utils.js')
 const fs = require('fs')
 
 const igBot = async () => {
-  console.log('checking db...')
-  const db = require('./botDb.json')
-  // CONTROL TIME START
+  const notifier = require('node-notifier')
+  const db = require('./db.json')
 
-  // check expiry
-  // if past date then update maxLikes and add expiry date again
-  if (db.waitUntil > new Date().getTime()) {
+  // check waitUntil
+  if (keepWaiting(db)) {
     console.log(`waiting until: ${new Date(db.waitUntil)}`.cyan)
-    return
-  }
-  // otherwise update db
-  // next round will need to wait atleast 8 - 36 hours
-  const waitUntil =
-    new Date().getTime() + random(1000 * 60 * 60 * 8, 1000 * 60 * 60 * 36)
-  const timestamp = new Date(waitUntil)
-  let maxLikes = db.maxLikes + random(-1, 4)
-  if (maxLikes <= 0) maxLikes = 5 // just incase we are unlucky in the beginning
-  // save db
-  const newDb = { waitUntil, timestamp, maxLikes }
-  console.log({ newDb })
-  try {
-    fs.writeFileSync('./bots/botDb.json', JSON.stringify(newDb))
-  } catch (e) {
-    console.error('db save failed.', e)
     return
   }
 
   // LETS DO THIS
   console.log('IG BOT'.yellow.bold)
 
-  let ccc = loadConfig('ccc')
-  let bme = loadConfig('bme')
-  let cccIg = await login(ccc)
-  let bmeIg = await login(bme)
-
-  const hashtags = ['beauty', 'cosmetics', 'vanity', 'makeup', 'makeupideas']
-
-  const accounts = [
-    { id: 'ccc', acc: cccIg },
-    { id: 'bme', acc: bmeIg }
-  ]
-  console.log({ accounts })
+  const accounts = require('./accounts.js')
 
   for (account of accounts) {
-    console.log(`${account.id.toUpperCase()}`.yellow.bold)
-    const acc = account.acc
-    await setAntiBanMode(acc)
-    await sleep(random(2000, 8000))
+    const { login, password, hashtags } = account
     const hashtag = hashtags[random(0, hashtags.length - 1)]
+    const { maxLikes } = db
+
+    console.log(`${login.toUpperCase()}`.yellow.bold)
     console.log(`Hashtag: ${hashtag}`.cyan)
-    let posts = await recentHashtagList(acc, hashtag)
+    await sleep(random(2000, 8000))
 
-    // grab posts which have not been liked
-    posts = posts.filter(p => !p.has_liked)
-    console.log('Number of posts:', posts.length)
-    console.log('Already liked:', posts.filter(p => p.has_liked).length)
+    // scrape hashtag with max potential likes
+    const results = await ig({ account, hashtag, maxLikes })
 
-    // randomizing maxcount
-    const maxCount = random(
-      maxLikes - Math.floor(maxLikes / random(3, 6)),
-      maxLikes
-    )
-    console.log(`maxCount: ${maxCount}`.cyan)
+    await updateDb(db)
 
-    for (let i = 0; i < maxCount; i++) {
-      // grab an early post randomly
-      const [randomPost] = posts.splice(random(0, random(3, 6)), 1)
-      console.log(`${i + 1} / ${maxCount}`)
-      console.log(`https://www.instagram.com/p/${randomPost.code}/`.green)
-      // super random sleep time before liking post
-      await sleep(random(random(1000, 4500), random(5000, 10000)))
-      await likePost(acc, randomPost)
-    }
-    const likeActivity = await getLikeActivityByHours(acc, 24)
     notifier.notify({
-      title: `IG-${account.id.toUpperCase()}`,
-      message: `Liked: ${maxCount}, Liked in 24hrs: ${likeActivity}`
+      title: `${login.toUpperCase()}`,
+      message: `${JSON.stringify(results, null, 1)}`
     })
   }
 
@@ -87,19 +41,29 @@ const igBot = async () => {
   return
 }
 
+igBot()
 module.exports = igBot
 
-// UTILS
-function random(low, high) {
-  return Math.floor(Math.random() * (high - low + 1) + low)
+function keepWaiting(db) {
+  return db.waitUntil > new Date().getTime()
 }
-async function sleep(t) {
-  new Promise(resolve =>
-    setTimeout(() => {
-      console.log(`sleep: ${(t / 1000).toFixed(1)}s`)
-      resolve()
-    }, t)
-  )
+
+async function updateDb(db) {
+  // next round will need to wait atleast 8 - 36 hours
+  const waitUntil =
+    new Date().getTime() + random(1000 * 60 * 60 * 8, 1000 * 60 * 60 * 36)
+  const timestamp = new Date(waitUntil)
+  const maxLikes = db.maxLikes + random(-1, 4)
+  if (maxLikes <= 0) maxLikes = 5 // just incase we are unlucky in the beginning
+  // save db
+  const newDb = { waitUntil, timestamp, maxLikes }
+  console.log({ newDb })
+  try {
+    fs.writeFileSync('./db.json', JSON.stringify(newDb))
+  } catch (e) {
+    console.error('db save failed.', e)
+    return
+  }
 }
 
 //POST EXAMPLE
