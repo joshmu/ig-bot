@@ -1,0 +1,14 @@
+{
+  "name": "ig-bot",
+  "version": "1.0.0",
+  "description": "",
+  "main": "app.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "author": "josh mu",
+  "license": "ISC",
+  "dependencies": {
+    "tools-for-instagram": "^1.8.3"
+  }
+}
