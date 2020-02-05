@@ -1,15 +1,17 @@
 require('tools-for-instagram')
+const notifier = require('node-notifier')
 const fs = require('fs')
-const db = require('./botDb.json')
 
 const igBot = async () => {
+  console.log('checking db...')
+  const db = require('./botDb.json')
   // CONTROL TIME START
 
   // check expiry
   // if past date then update maxLikes and add expiry date again
   if (db.waitUntil > new Date().getTime()) {
     console.log(`waiting until: ${new Date(db.waitUntil)}`.cyan)
-    process.exit(0)
+    return
   }
   // otherwise update db
   // next round will need to wait atleast 8 - 36 hours
@@ -25,7 +27,7 @@ const igBot = async () => {
     fs.writeFileSync('./bots/botDb.json', JSON.stringify(newDb))
   } catch (e) {
     console.error('db save failed.', e)
-    process.exit(0)
+    return
   }
 
   // LETS DO THIS
@@ -38,9 +40,15 @@ const igBot = async () => {
 
   const hashtags = ['beauty', 'cosmetics', 'vanity', 'makeup', 'makeupideas']
 
-  const accounts = [cccIg, bmeIg]
-  for (acc of accounts) {
-    console.log({ acc })
+  const accounts = [
+    { id: 'ccc', acc: cccIg },
+    { id: 'bme', acc: bmeIg }
+  ]
+  console.log({ accounts })
+
+  for (account of accounts) {
+    console.log(`${account.id.toUpperCase()}`.yellow.bold)
+    const acc = account.acc
     await setAntiBanMode(acc)
     await sleep(random(2000, 8000))
     const hashtag = hashtags[random(0, hashtags.length - 1)]
@@ -69,13 +77,15 @@ const igBot = async () => {
       await likePost(acc, randomPost)
     }
     const likeActivity = await getLikeActivityByHours(acc, 24)
+    notifier.notify({
+      title: `IG-${account.id.toUpperCase()}`,
+      message: `Liked: ${maxCount}, Liked in 24hrs: ${likeActivity}`
+    })
   }
 
   console.log('done'.yellow)
-  process.exit(0)
+  return
 }
-
-igBot()
 
 module.exports = igBot
 
@@ -90,10 +100,6 @@ async function sleep(t) {
       resolve()
     }, t)
   )
-}
-
-function getPost(posts) {
-  return post
 }
 
 //POST EXAMPLE

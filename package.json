@@ -9,6 +9,9 @@
   "author": "josh mu",
   "license": "ISC",
   "dependencies": {
+    "cron": "^1.8.2",
+    "is-online": "^8.2.1",
+    "node-notifier": "^6.0.0",
     "tools-for-instagram": "^1.8.3"
   }
 }
