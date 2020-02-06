@@ -76,11 +76,11 @@ async function likeTags(opts) {
     while (likeCountforTag <= likeTotalforTag && postIndex < posts.length - 1) {
       // open post
       await posts[postIndex].click()
-      await page.waitForSelector('#react-root[aria-hidden="true"]')
-      await page.waitFor(random(1000, 3000))
+      // await page.waitForSelector('#react-root[aria-hidden="true"]')
+      await page.waitFor(random(2500, 4000))
 
       // check if it can be liked
-      let likeBtn = await page.$('span[aria-label="Like"]')
+      let likeBtn = await page.$('[aria-label="Like"]') // oposite is 'Unlike' > svg elem
       if (likeBtn) {
         await likeBtn.click()
         await page.waitFor(random(1000, 4000))
@@ -92,8 +92,8 @@ async function likeTags(opts) {
       // close modal
       let closeModalBtn = await page.$x('//button[contains(text(),"Close")]')
       await closeModalBtn[0].click()
-      await page.waitForSelector('#react-root[aria-hidden="false"]')
-      await page.waitFor(random(500, 1500))
+      // await page.waitForSelector('#react-root[aria-hidden="false"]')
+      await page.waitFor(random(1500, 2500))
 
       // next post
       postIndex++
