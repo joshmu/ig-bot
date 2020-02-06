@@ -6,14 +6,15 @@ const puppeteer = require('puppeteer-extra')
 // add stealth plugin and use defaults (all evasion techniques)
 const StealthPlugin = require('puppeteer-extra-plugin-stealth')
 
+const headless = process.env.HEADLESS === 'true' ? true : false
 const proxy = process.env.PROXY || false // or provide proxy ip address
-const loadImages = process.env.LOAD_IMAGES || false
+const loadImages = process.env.LOAD_IMAGES === 'true' ? true : false
 
 async function pup() {
   puppeteer.use(StealthPlugin())
 
   const browser = await puppeteer.launch({
-    headless: true,
+    headless: headless,
     slowMo: 0,
     args: [
       '--no-sandbox',

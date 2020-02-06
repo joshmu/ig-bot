@@ -1,3 +1,4 @@
+require('colors')
 const ig = require('./ig.js')
 const { random, sleep } = require('./utils.js')
 const fs = require('fs')
@@ -29,19 +30,21 @@ const igBot = async () => {
     // scrape hashtag with max potential likes
     const results = await ig({ account, hashtag, maxLikes })
 
-    await updateDb(db)
-
     notifier.notify({
       title: `${login.toUpperCase()}`,
       message: `${JSON.stringify(results, null, 1)}`
     })
   }
 
+  await updateDb(db)
   console.log('done'.yellow)
   return
 }
 
-igBot()
+;(async () => {
+  igBot()
+})()
+
 module.exports = igBot
 
 function keepWaiting(db) {

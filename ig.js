@@ -3,7 +3,8 @@ const pup = require('./pup.js')
 const { random, sleep } = require('./utils.js')
 
 async function ig(opts) {
-  const { account, hashtag, maxLikes } = opts
+  const { account, maxLikes } = opts
+  const hashtags = account.hashtags
   console.log('ig scrape')
 
   const { browser, page } = await pup()
@@ -18,37 +19,8 @@ async function ig(opts) {
   // LOGIN
   await loginInit({ account, page })
 
-  await sleep(10000)
-  process.exit(0)
-
-  /////////////
-
-  let data = {}
-  // INSTAGRAM SCRAPE
-  // get posts
-  let posts = await recentHashtagList(acc, hashtag)
-
-  // grab posts which have not been liked
-  posts = posts.filter(p => !p.has_liked)
-  console.log('Number of posts:', posts.length)
-  console.log('Already liked:', posts.filter(p => p.has_liked).length)
-
-  // randomizing maxcount
-  const maxCount = random(
-    maxLikes - Math.floor(maxLikes / random(3, 6)),
-    maxLikes
-  )
-  console.log(`maxCount: ${maxCount}`.cyan)
-
-  for (let i = 0; i < maxCount; i++) {
-    // grab an early post randomly
-    const [randomPost] = posts.splice(random(0, random(3, 6)), 1)
-    console.log(`${i + 1} / ${maxCount}`)
-    console.log(`https://www.instagram.com/p/${randomPost.code}/`.green)
-    // super random sleep time before liking post
-    await sleep(random(random(1000, 4500), random(5000, 10000)))
-    await likePost(acc, randomPost)
-  }
+  // LIKE TAGS
+  await likeTags({ page, hashtags, maxLikes })
 
   await browser.close()
   return data
@@ -75,4 +47,60 @@ async function loginInit({ account, page }) {
   await page.click('button[type="submit"]')
   await page.waitForNavigation({ waitUntil: 'networkidle2' })
   await page.waitFor(random(2000, 3000))
+}
+
+async function likeTags(opts) {
+  const { page, hashtags: tags, maxLikes } = opts
+  const totalLikes = random(
+    Math.round(maxLikes * 0.8),
+    Math.round(maxLikes * 1.2)
+  )
+  console.log({ totalLikes })
+  let likeCount = 0
+
+  for (tag of tags) {
+    console.log(`${tag}`)
+    let url = `https://www.instagram.com/explore/tags/${tag}/`
+
+    await page.goto(url, { waitUntil: 'networkidle2' })
+    await page.waitFor(random(2500, 4000))
+
+    // get recent images - 'document.querySelectorAll pup method'
+    let posts = await page.$$('article > div:nth-child(3) a')
+
+    // divide like total and slightly create variance
+    let likeTotalforTag = Math.floor(totalLikes / tags.length) + random(-3, 3)
+    let likeCountforTag = 0
+    let postIndex = 0
+
+    while (likeCountforTag <= likeTotalforTag && postIndex < posts.length - 1) {
+      // open post
+      await posts[postIndex].click()
+      await page.waitForSelector('#react-root[aria-hidden="true"]')
+      await page.waitFor(random(1000, 3000))
+
+      // check if it can be liked
+      let likeBtn = await page.$('span[aria-label="Like"]')
+      if (likeBtn) {
+        await likeBtn.click()
+        await page.waitFor(random(1000, 4000))
+        likeCountforTag++
+        likeCount++
+        console.log(`${likeCount} likes`)
+      }
+
+      // close modal
+      let closeModalBtn = await page.$x('//button[contains(text(),"Close")]')
+      await closeModalBtn[0].click()
+      await page.waitForSelector('#react-root[aria-hidden="false"]')
+      await page.waitFor(random(500, 1500))
+
+      // next post
+      postIndex++
+    }
+
+    // tag finished
+  }
+
+  // like process finished
 }
